@@ -1,0 +1,38 @@
+---
+
+- name: Create a new user and configure SSH
+  hosts: servers
+  become: yes
+
+  vars:
+    username: anje
+    ssh_pub_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILseQ8aOxpIzkDH4ka7i391ejNttYIDUAtoK3Fvi6QB0 anje default"
+
+  tasks:
+    - name: Create the user
+      user:
+        name: "{{username}}"
+        shell: /bin/bash
+        groups: sudo
+        append: yes
+        state: present
+        create_home: yes
+
+    - name: Set authorized key for user
+      authorized_key:
+        user: "{{username}}"
+        state: present
+        key: "{{ssh_pub_key}}"
+
+    - name: Disable password authentication for SSH
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        state: present
+        backup: yes
+
+    - name: Restart SSH service
+      service:
+        name: ssh
+        state: restarted
